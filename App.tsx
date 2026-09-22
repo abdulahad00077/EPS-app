@@ -87,13 +87,13 @@ const AppContent = () => {
           if (isNewer) {
             Alert.alert(
               'Update Available',
-              `A new version (${latestVersion}) of Skora Connect is available. Please update the app.`,
+              `A new version (${latestVersion}) of Mera Elegant is available. Please update the app.`,
               [
                 { text: 'Cancel', style: 'cancel' },
                 { 
                   text: 'Update Now', 
                   onPress: () => {
-                    const devStoreUrl = 'https://play-store-devfordevs.vercel.app/app/skora-connect-app'; 
+                    const devStoreUrl = 'https://play-store-devfordevs.vercel.app/app/Mera Elegant-connect-app'; 
                     Linking.openURL(devStoreUrl).catch(err => {
                       console.error("Couldn't open devstore:", err);
                       Linking.openURL('https://github.com/AbdulAhad0007/edutrack-parents-main/releases/latest');

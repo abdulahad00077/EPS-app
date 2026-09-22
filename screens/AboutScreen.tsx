@@ -33,7 +33,7 @@ const AboutScreen = () => {
           <View style={styles.logoCircle}>
             <MaterialCommunityIcons name="school" size={48} color="#FFFFFF" />
           </View>
-          <Text style={[styles.appName, { color: textColor }]}>Skora Connect</Text>
+          <Text style={[styles.appName, { color: textColor }]}>Mera Elegant</Text>
           <Text style={[styles.version, { color: subtextColor }]}>{t('version')} 1.0.0</Text>
         </View>
 

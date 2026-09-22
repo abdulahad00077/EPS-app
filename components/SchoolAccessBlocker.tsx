@@ -70,9 +70,9 @@ export function SchoolAccessBlocker() {
           
           <Text style={[styles.description, { color: textColor }]}>
             {status === 'suspended' 
-              ? "Your school's Skora portal has been suspended by the administrator. Normal access is disabled."
+              ? "Your school's Mera Elegant portal has been suspended by the administrator. Normal access is disabled."
               : (amount > 0 
-                  ? "Your school's Skora portal is temporarily unavailable because a payment is pending."
+                  ? "Your school's Mera Elegant portal is temporarily unavailable because a payment is pending."
                   : "Your subscription has been expired , Pay to DevforDevs to continue"
                 )}
           </Text>

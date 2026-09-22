@@ -352,7 +352,7 @@ const ProfileScreen = () => {
         <View style={styles.versionInfo}>
           <View style={styles.versionRow}>
             <MaterialCommunityIcons name="school" size={16} color={borderColor} />
-            <Text style={[styles.versionBrand, { color: borderColor }]}>SKORA CONNECT</Text>
+            <Text style={[styles.versionBrand, { color: borderColor }]}>Mera Elegant</Text>
           </View>
           <Text style={[styles.versionNumber, { color: borderColor }]}>RELEASE v1.1.0-PREMIUM</Text>
         </View>

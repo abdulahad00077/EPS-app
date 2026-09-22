@@ -5,7 +5,7 @@ import { coreSupabase } from './coreClient';
 let resolvedClient: SupabaseClient | null = null;
 let currentSchoolId: string | null = null;
 
-const DB_CONFIG_KEY = 'skora_db_config';
+const DB_CONFIG_KEY = 'Mera Elegant_db_config';
 
 interface DatabaseConfig {
   type: string;

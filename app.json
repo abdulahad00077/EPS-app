@@ -22,8 +22,7 @@
         "foregroundImage": "./assets/adaptive-icon.png"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "com.meraelegant.app",
-      "googleServicesFile": "./google-services.json"
+      "package": "com.meraelegant.app"
     },
     "web": {
       "favicon": "./assets/favicon.ico"

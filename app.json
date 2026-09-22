@@ -1,0 +1,52 @@
+{
+  "expo": {
+    "name": "Elegant Public School",
+    "slug": "mera-elegant",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "scheme": "mera-elegant",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.meraelegant.app"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#ffffff",
+        "foregroundImage": "./assets/adaptive-icon.png"
+      },
+      "predictiveBackGestureEnabled": false,
+      "package": "com.meraelegant.app",
+      "googleServicesFile": "./google-services.json"
+    },
+    "web": {
+      "favicon": "./assets/favicon.ico"
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "plugins": [
+      [
+        "expo-notifications",
+        {
+          "color": "#0284C7",
+          "defaultChannel": "default",
+          "enableBackgroundRemoteNotifications": true
+        }
+      ],
+      "@react-native-community/datetimepicker"
+    ],
+    "notification": {
+      "icon": "./assets/icon.png",
+      "color": "#0284C7",
+      "androidMode": "default",
+      "androidCollapsedTitle": "Mera Elegant"
+    }
+  }
+}

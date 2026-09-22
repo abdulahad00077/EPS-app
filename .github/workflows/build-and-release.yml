@@ -1,0 +1,87 @@
+name: Build and Release Android APK
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'app.json'
+  workflow_dispatch: # Allow manual trigger as backup
+
+jobs:
+  build:
+    name: EAS Build and GitHub Release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      VERSION_CHANGED: "false"
+      VERSION: "0.0.0"
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2 # Need previous commit to compare versions
+
+      - name: Check if version changed
+        id: version_check
+        run: |
+          CURRENT_VERSION=$(node -p "require('./app.json').expo.version")
+          # Get version from previous commit
+          PREV_VERSION=$(git show HEAD~1:app.json 2>/dev/null | node -p "JSON.parse(require('fs').readFileSync('/dev/stdin','utf8')).expo.version" 2>/dev/null || echo "")
+          
+          echo "Current version: $CURRENT_VERSION"
+          echo "Previous version: $PREV_VERSION"
+          
+          if [ "$CURRENT_VERSION" = "$PREV_VERSION" ]; then
+            echo "VERSION_CHANGED=false" >> $GITHUB_ENV
+            echo "⏭️ Version unchanged ($CURRENT_VERSION). Skipping build."
+          else
+            echo "VERSION_CHANGED=true" >> $GITHUB_ENV
+            echo "VERSION=$CURRENT_VERSION" >> $GITHUB_ENV
+            echo "🚀 Version changed from $PREV_VERSION to $CURRENT_VERSION. Building!"
+          fi
+
+      - name: Setup Node.js
+        if: env.VERSION_CHANGED == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        if: env.VERSION_CHANGED == 'true'
+        run: npm ci
+
+      - name: Setup Java
+        if: env.VERSION_CHANGED == 'true'
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Expo Prebuild
+        if: env.VERSION_CHANGED == 'true'
+        run: npx expo prebuild --platform android
+
+      - name: Build APK
+        if: env.VERSION_CHANGED == 'true'
+        working-directory: ./android
+        run: ./gradlew assembleRelease
+
+      - name: Rename APK
+        if: env.VERSION_CHANGED == 'true'
+        run: mv android/app/build/outputs/apk/release/app-release.apk app-release.apk
+
+
+
+      - name: Create GitHub Release
+        if: env.VERSION_CHANGED == 'true'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ env.VERSION }}
+          name: v${{ env.VERSION }}
+          files: app-release.apk
+          make_latest: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

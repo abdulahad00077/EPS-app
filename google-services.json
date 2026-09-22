@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "721043827201",
+    "project_id": "skora-erp",
+    "storage_bucket": "skora-erp.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:721043827201:android:1552fb6329c6ecaa8cee00",
+        "android_client_info": {
+          "package_name": "com.skora.parents"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCfww-vWnmmPF9cUD4hTpf7xfXctz5AfzI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:721043827201:android:da7c394c0a6c8ad58cee00",
+        "android_client_info": {
+          "package_name": "com.skora.teacher"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCfww-vWnmmPF9cUD4hTpf7xfXctz5AfzI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

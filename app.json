@@ -2,7 +2,7 @@
   "expo": {
     "name": "Elegant Public School",
     "slug": "mera-elegant",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "scheme": "mera-elegant",

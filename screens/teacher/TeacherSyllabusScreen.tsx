@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, ActivityIndicator, TouchableOpacity, Modal, TextInput, Alert, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, FlatList, ActivityIndicator, TouchableOpacity, Modal, TextInput, Alert, KeyboardAvoidingView, Platform, ScrollView, Linking } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../../hooks/useAuth';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -10,25 +10,28 @@ import CustomDropdown from '../../components/CustomDropdown';
 import { supabase } from '../../services/supabase';
 import * as DocumentPicker from 'expo-document-picker';
 
+import { PDFDocument } from 'pdf-lib';
+
 export default function TeacherSyllabusScreen() {
   const { teacher } = useAuth();
   const { colors, isDark } = useTheme();
   
   const insets = useSafeAreaInsets();
-  const { data: syllabus, loading } = useRealtimeData<any>('syllabus', teacher?.school_id, { column: 'created_at', ascending: false });
+  const { data: syllabus, loading, refetch } = useRealtimeData<any>('syllabus', teacher?.school_id, { column: 'created_at', ascending: false });
   const { selectedClass } = useTeacherFilter();
   
   const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
   const [globalSubjects, setGlobalSubjects] = useState<string[]>([]);
   
   // Add Syllabus Modal State
-  const predefinedClasses = ['Play-Nursery', 'Nursery', 'LKG', 'UKG', 'Prep', '1st', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th'];
+  const predefinedClasses = ['Play-Nursery', 'Nursery', 'LKG', 'UKG', 'Prep', '1st', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th', '9th', '10th'];
   const [isAddModalVisible, setIsAddModalVisible] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   const [isCustomSubject, setIsCustomSubject] = useState(false);
   const [customSubjectName, setCustomSubjectName] = useState('');
   const [pdfFile, setPdfFile] = useState<any>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   const [newSyllabus, setNewSyllabus] = useState({
     class: '',
@@ -61,10 +64,17 @@ export default function TeacherSyllabusScreen() {
     try {
       const result = await DocumentPicker.getDocumentAsync({
         type: 'application/pdf',
+        copyToCacheDirectory: true,
       });
       
       if (!result.canceled && result.assets && result.assets.length > 0) {
-        setPdfFile(result.assets[0]);
+        const file = result.assets[0];
+        // Limit to 10MB
+        if (file.size && file.size > 10 * 1024 * 1024) {
+          Alert.alert('File Too Large', 'Please select a PDF smaller than 10MB.');
+          return;
+        }
+        setPdfFile(file);
       }
     } catch (err) {
       console.error('Error picking document:', err);
@@ -117,19 +127,65 @@ export default function TeacherSyllabusScreen() {
         }
       }
 
-      // 2. Upload PDF if selected
+      // 2. Upload PDF if selected (with compression)
       let fileUrl = null;
       if (pdfFile) {
-        // Read the file blob from the local URI
-        const response = await fetch(pdfFile.uri);
-        const blob = await response.blob();
-        
         const sanitizedName = pdfFile.name.replace(/[^a-zA-Z0-9.\-_]/g, '_');
         const fileName = `syllabus/${teacher?.school_id}/${Date.now()}_${sanitizedName}`;
         
+        // Read file safely using fetch and FileReader to bypass Android file read restrictions
+        const response = await fetch(pdfFile.uri);
+        const blob = await response.blob();
+        
+        const base64Data = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onerror = reject;
+          reader.onload = () => {
+            const dataUrl = reader.result as string;
+            const base64 = dataUrl.split(',')[1];
+            resolve(base64);
+          };
+          reader.readAsDataURL(blob);
+        });
+        
+        // Decode base64 to Uint8Array
+        const binaryString = atob(base64Data);
+        const originalBytes = new Uint8Array(binaryString.length);
+        for (let i = 0; i < binaryString.length; i++) {
+          originalBytes[i] = binaryString.charCodeAt(i);
+        }
+
+        // Compress PDF using pdf-lib
+        let uploadBytes: Uint8Array;
+        try {
+          const pdfDoc = await PDFDocument.load(originalBytes, { ignoreEncryption: true });
+          
+          // Strip metadata to reduce size
+          pdfDoc.setTitle('');
+          pdfDoc.setAuthor('');
+          pdfDoc.setSubject('');
+          pdfDoc.setKeywords([]);
+          pdfDoc.setProducer('');
+          pdfDoc.setCreator('');
+
+          // Re-serialize with maximum compression (object streams use deflate)
+          const optimizedBytes = await pdfDoc.save({
+            useObjectStreams: true,
+            addDefaultPage: false,
+            objectsPerTick: 100,
+          });
+          uploadBytes = new Uint8Array(optimizedBytes);
+          
+          const savedPercent = ((1 - uploadBytes.length / originalBytes.length) * 100).toFixed(1);
+          console.log(`PDF compressed: ${(originalBytes.length / 1024).toFixed(0)}KB → ${(uploadBytes.length / 1024).toFixed(0)}KB (saved ${savedPercent}%)`);
+        } catch (compressError) {
+          console.warn('PDF compression failed, uploading original:', compressError);
+          uploadBytes = originalBytes;
+        }
+
         const { data: uploadData, error: uploadError } = await supabase.storage
           .from('attachments')
-          .upload(fileName, blob, {
+          .upload(fileName, uploadBytes.buffer as ArrayBuffer, {
             contentType: 'application/pdf',
           });
           
@@ -142,31 +198,88 @@ export default function TeacherSyllabusScreen() {
         fileUrl = publicUrlData.publicUrl;
       }
 
-      // 3. Insert Syllabus
-      const { error } = await supabase.from('syllabus').insert([{
-        school_id: teacher?.school_id,
+      // 3. Insert or Update Syllabus
+      const payload: any = {
         class: newSyllabus.class,
         subject: finalSubject,
         chapter_name: newSyllabus.chapter_name,
         description: newSyllabus.description,
-        attachment_url: fileUrl,
-      }]);
+      };
       
-      if (error) throw error;
+      if (fileUrl) payload.attachment_url = fileUrl;
+
+      if (editingId) {
+        const { error } = await supabase
+          .from('syllabus')
+          .update(payload)
+          .eq('id', editingId);
+        if (error) throw error;
+        Alert.alert('Success', 'Syllabus updated successfully!');
+      } else {
+        payload.school_id = teacher?.school_id;
+        const { error } = await supabase.from('syllabus').insert([payload]);
+        if (error) throw error;
+        Alert.alert('Success', 'Syllabus added successfully!');
+      }
       
-      Alert.alert('Success', 'Syllabus added successfully!');
       setIsAddModalVisible(false);
+      setEditingId(null);
       setNewSyllabus({ class: '', subject: '', chapter_name: '', description: '' });
       setIsCustomSubject(false);
       setCustomSubjectName('');
       setPdfFile(null);
+      refetch();
+
     } catch (error: any) {
       console.error(error);
-      Alert.alert('Error', error.message || 'Failed to add syllabus');
+      Alert.alert('Error', error.message || 'Failed to save syllabus');
     } finally {
       setIsSubmitting(false);
     }
   };
+
+  const openEditModal = (item: any) => {
+    setEditingId(item.id);
+    setNewSyllabus({
+      class: item.class,
+      subject: item.subject,
+      chapter_name: item.chapter_name,
+      description: item.description || ''
+    });
+    setIsCustomSubject(false);
+    setCustomSubjectName('');
+    setPdfFile(null);
+    setIsAddModalVisible(true);
+  };
+
+  const handleDeleteSyllabus = (id: string) => {
+    Alert.alert(
+      "Delete Syllabus",
+      "Are you sure you want to delete this syllabus? This action cannot be undone.",
+      [
+        { text: "Cancel", style: "cancel" },
+        { 
+          text: "Delete", 
+          style: "destructive",
+          onPress: async () => {
+            try {
+              const { error } = await supabase
+                .from('syllabus')
+                .delete()
+                .eq('id', id);
+              if (error) throw error;
+              Alert.alert('Success', 'Syllabus deleted.');
+              refetch();
+
+            } catch (err: any) {
+              Alert.alert('Error', err.message || 'Failed to delete syllabus');
+            }
+          }
+        }
+      ]
+    );
+  };
+
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['left', 'right', 'bottom']}>
@@ -212,11 +325,31 @@ export default function TeacherSyllabusScreen() {
               <Text style={[styles.desc, { color: colors.textSecondary }]}>{item.description}</Text>
               
               {item.attachment_url && (
-                <TouchableOpacity style={[styles.attachmentBtn, { backgroundColor: colors.primary + '10' }]}>
+                <TouchableOpacity 
+                  style={[styles.attachmentBtn, { backgroundColor: colors.primary + '10' }]}
+                  onPress={() => Linking.openURL(item.attachment_url)}
+                >
                   <Ionicons name="document-text" size={16} color={colors.primary} />
                   <Text style={[styles.attachmentText, { color: colors.primary }]}>View Attachment</Text>
                 </TouchableOpacity>
               )}
+
+              <View style={styles.actionRow}>
+                <TouchableOpacity 
+                  style={[styles.actionBtn, { backgroundColor: colors.primary + '10' }]} 
+                  onPress={() => openEditModal(item)}
+                >
+                  <Ionicons name="create-outline" size={18} color={colors.primary} />
+                  <Text style={[styles.actionText, { color: colors.primary }]}>Edit</Text>
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  style={[styles.actionBtn, { backgroundColor: '#fee2e2' }]} 
+                  onPress={() => handleDeleteSyllabus(item.id)}
+                >
+                  <Ionicons name="trash-outline" size={18} color="#ef4444" />
+                  <Text style={[styles.actionText, { color: '#ef4444' }]}>Delete</Text>
+                </TouchableOpacity>
+              </View>
             </View>
           )}
           ListEmptyComponent={() => (
@@ -408,5 +541,26 @@ const styles = StyleSheet.create({
   submitBtnText: { color: '#fff', fontSize: 16, fontWeight: '600' },
   customSubjectRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   cancelBtn: { padding: 12, borderWidth: 1, borderRadius: 12, justifyContent: 'center' },
-  uploadBtn: { flexDirection: 'row', alignItems: 'center', gap: 8, borderWidth: 1, paddingVertical: 10, paddingHorizontal: 15, borderRadius: 10 }
+  uploadBtn: { flexDirection: 'row', alignItems: 'center', gap: 8, borderWidth: 1, paddingVertical: 10, paddingHorizontal: 15, borderRadius: 10 },
+  actionRow: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    marginTop: 15,
+    borderTopWidth: 1,
+    borderTopColor: '#f1f5f9',
+    paddingTop: 12,
+    gap: 10,
+  },
+  actionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 6,
+    gap: 4,
+  },
+  actionText: {
+    fontSize: 14,
+    fontWeight: '500',
+  }
 });

@@ -301,6 +301,13 @@ export const translations = {
     activityTimeline: "Activity Timeline",
     activityTimelineFor: "Activity Timeline for",
     call: "Call",
+
+    // Announcements Screen (new)
+    announcements: "Announcements",
+    filterByDate: "Filter by Date",
+    clearFilter: "Clear Filter",
+    noAnnouncementsForDate: "No announcements for this date.",
+    noAnnouncements: "No announcements found.",
   },
   hi: {
     // Drawer
@@ -604,6 +611,13 @@ export const translations = {
     activityTimeline: "गतिविधि समयरेखा",
     activityTimelineFor: "गतिविधि समयरेखा",
     call: "कॉल",
+
+    // Announcements Screen (new)
+    announcements: "घोषणाएँ",
+    filterByDate: "तिथि के अनुसार फ़िल्टर करें",
+    clearFilter: "फ़िल्टर साफ़ करें",
+    noAnnouncementsForDate: "इस तिथि के लिए कोई घोषणा नहीं है।",
+    noAnnouncements: "कोई घोषणा नहीं मिली।",
   }
 };
 

@@ -18,6 +18,7 @@ import TeacherSyllabusScreen from '../screens/teacher/TeacherSyllabusScreen';
 import TeacherDatesheetScreen from '../screens/teacher/TeacherDatesheetScreen';
 import TeacherAnnouncementsScreen from '../screens/teacher/TeacherAnnouncementsScreen';
 import TeacherCompetitionsScreen from '../screens/teacher/TeacherCompetitionsScreen';
+import TeacherFeesScreen from '../screens/teacher/TeacherFeesScreen';
 import { TeacherFilterProvider } from '../contexts/TeacherFilterContext';
 
 const Drawer = createDrawerNavigator();
@@ -65,6 +66,16 @@ const BackButton = () => {
   const { colors } = useTheme();
   return (
     <TouchableOpacity onPress={() => navigation.navigate('TeacherHome')} style={{ marginLeft: 15 }}>
+      <Ionicons name="arrow-back" size={24} color={colors.text} />
+    </TouchableOpacity>
+  );
+};
+
+const GoBackButton = () => {
+  const navigation = useNavigation<any>();
+  const { colors } = useTheme();
+  return (
+    <TouchableOpacity onPress={() => navigation.goBack()} style={{ marginLeft: 15 }}>
       <Ionicons name="arrow-back" size={24} color={colors.text} />
     </TouchableOpacity>
   );
@@ -160,12 +171,21 @@ export default function TeacherDrawerNavigator() {
         <Drawer.Screen 
           name="TeacherExams" 
           component={TeacherExamsScreen} 
-          options={{ drawerLabel: 'Exams & Results', headerTitle: 'Exams & Results', drawerIcon: ({ color }) => <Ionicons name="document-text-outline" size={22} color={color} /> }}
+          options={{ 
+            drawerLabel: 'Exams & Results', 
+            headerTitle: 'Exams & Results', 
+            headerLeft: () => <BackButton />,
+            drawerIcon: ({ color }) => <Ionicons name="document-text-outline" size={22} color={color} /> 
+          }}
         />
         <Drawer.Screen 
           name="TeacherExamResults" 
           component={TeacherExamResultsScreen} 
-          options={{ drawerItemStyle: { display: 'none' }, headerTitle: 'Exam Results' }}
+          options={{ 
+            drawerItemStyle: { display: 'none' }, 
+            headerTitle: 'Exam Results',
+            headerLeft: () => <GoBackButton />
+          }}
         />
         <Drawer.Screen 
           name="TeacherSyllabus" 
@@ -201,6 +221,15 @@ export default function TeacherDrawerNavigator() {
             title: 'Competitions',
             headerLeft: () => <BackButton />,
             drawerIcon: ({ color }) => <Ionicons name="trophy-outline" size={22} color={color} />
+          }} 
+        />
+        <Drawer.Screen 
+          name="TeacherFees" 
+          component={TeacherFeesScreen} 
+          options={{ 
+            title: 'Class Fees (Pending)',
+            headerLeft: () => <BackButton />,
+            drawerIcon: ({ color }) => <Ionicons name="cash-outline" size={22} color={color} />
           }} 
         />
       </Drawer.Navigator>

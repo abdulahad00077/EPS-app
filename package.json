@@ -32,6 +32,7 @@
     "expo-task-manager": "~57.0.19",
     "expo-updates": "~57.0.23",
     "nativewind": "^4.1.23",
+    "pdf-lib": "^1.17.1",
     "react": "^19.2.3",
     "react-native": "^0.86.3",
     "react-native-chart-kit": "^7.0.4",

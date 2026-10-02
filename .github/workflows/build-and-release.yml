@@ -44,21 +44,21 @@ jobs:
         working-directory: ./android
         run: ./gradlew assembleRelease
 
-      - name: Rename APK
-        run: mv android/app/build/outputs/apk/release/app-release.apk app-release.apk
-
       - name: Get Version
         id: get_version
         run: |
           CURRENT_VERSION=$(node -p "require('./app.json').expo.version")
           echo "VERSION=$CURRENT_VERSION" >> $GITHUB_ENV
 
+      - name: Rename APK
+        run: mv android/app/build/outputs/apk/release/app-release.apk "Elegant-school-${{ env.VERSION }}.apk"
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ env.VERSION }}-${{ github.run_number }}
           name: v${{ env.VERSION }} (Build ${{ github.run_number }})
-          files: app-release.apk
+          files: Elegant-school-${{ env.VERSION }}.apk
           make_latest: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

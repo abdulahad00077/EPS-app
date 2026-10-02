@@ -8,7 +8,7 @@
     "scheme": "mera-elegant",
     "userInterfaceStyle": "light",
     "splash": {
-      "image": "./assets/splash.png",
+      "image": "./assets/school-logo.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },

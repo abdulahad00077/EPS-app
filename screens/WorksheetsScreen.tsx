@@ -25,6 +25,11 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
+const TransliteratedText = ({ text }: { text: string }) => {
+  const translated = useTransliteration(text);
+  return <>{translated}</>;
+};
+
 const WorksheetCard = ({ item, isDark, cardColor, borderColor, bgColor, textColor, subtextColor, t }: any) => {
   const transTitle = useTransliteration(item.title);
   const transDesc = useTransliteration(item.description);
@@ -68,7 +73,7 @@ const WorksheetCard = ({ item, isDark, cardColor, borderColor, bgColor, textColo
           <View style={{ marginBottom: 20 }}>
             {questions.map((q: string, idx: number) => (
               <Text key={idx} style={[styles.description, { color: subtextColor, marginBottom: 4 }]} numberOfLines={3}>
-                • {useTransliteration(q)}
+                • <TransliteratedText text={q} />
               </Text>
             ))}
           </View>
@@ -239,7 +244,7 @@ const WorksheetsScreen = () => {
                 style={{ paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, backgroundColor: subjectFilter === sub ? '#0284C7' : (isDark ? '#334155' : '#E2E8F0'), marginRight: 10 }}
                 onPress={() => setSubjectFilter(sub)}
               >
-                <Text style={{ color: subjectFilter === sub ? '#fff' : textColor, fontWeight: '600' }}>{useTransliteration(sub)}</Text>
+                <Text style={{ color: subjectFilter === sub ? '#fff' : textColor, fontWeight: '600' }}><TransliteratedText text={sub} /></Text>
               </TouchableOpacity>
             ))}
           </ScrollView>
@@ -277,9 +282,9 @@ const WorksheetsScreen = () => {
           worksheets
             .filter(w => !dateFilter || new Date(w.date).toDateString() === dateFilter.toDateString())
             .filter(w => !subjectFilter || w.subject === subjectFilter)
-            .map((item) => (
+            .map((item, index) => (
             <WorksheetCard
-              key={item.id}
+              key={`${item.id}-${index}`}
               item={item}
               isDark={isDark}
               cardColor={cardColor}

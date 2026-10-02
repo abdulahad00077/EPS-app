@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { View, Text, StyleSheet, FlatList, ActivityIndicator, TouchableOpacity, Platform } from 'react-native';
+import { View, Text, StyleSheet, FlatList, ActivityIndicator, TouchableOpacity, Platform, TextInput } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons, Feather } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -19,6 +19,7 @@ export default function AnnouncementsScreen() {
   
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const { data: announcements, loading } = useRealtimeData<any>('school_announcements', selectedStudent?.school_id, { column: 'created_at', ascending: false });
 
@@ -41,8 +42,17 @@ export default function AnnouncementsScreen() {
       });
     }
 
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      filtered = filtered.filter((a: any) => {
+        const title = (a.title || '').toLowerCase();
+        const content = (a.content || '').toLowerCase();
+        return title.includes(q) || content.includes(q);
+      });
+    }
+
     return filtered;
-  }, [announcements, selectedDate]);
+  }, [announcements, selectedDate, searchQuery]);
 
   const onDateChange = (event: any, date?: Date) => {
     setShowDatePicker(Platform.OS === 'ios');
@@ -66,6 +76,22 @@ export default function AnnouncementsScreen() {
           <TouchableOpacity onPress={() => navigation.dispatch(DrawerActions.openDrawer())} style={{ padding: 8, marginRight: -8 }}>
             <Feather name="menu" size={24} color={colors.text} />
           </TouchableOpacity>
+        </View>
+
+        <View style={[styles.searchContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <Ionicons name="search" size={20} color={colors.textSecondary} style={styles.searchIcon} />
+          <TextInput
+            style={[styles.searchInput, { color: colors.text }]}
+            placeholder={t('searchAnnouncements', 'Search announcements...')}
+            placeholderTextColor={colors.textSecondary}
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+          />
+          {searchQuery.length > 0 && (
+            <TouchableOpacity onPress={() => setSearchQuery('')} style={styles.clearSearchBtn}>
+              <Ionicons name="close-circle" size={20} color={colors.textSecondary} />
+            </TouchableOpacity>
+          )}
         </View>
 
         <View style={{ marginTop: 12, flexDirection: 'row', justifyContent: 'flex-start', alignItems: 'center' }}>
@@ -153,6 +179,18 @@ const styles = StyleSheet.create({
     fontSize: 24, 
     fontWeight: 'bold' 
   },
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 15,
+    paddingHorizontal: 12,
+    height: 44,
+    borderRadius: 8,
+    borderWidth: 1,
+  },
+  searchIcon: { marginRight: 8 },
+  searchInput: { flex: 1, fontSize: 15, height: '100%' },
+  clearSearchBtn: { padding: 4 },
   dateFilterBtn: {
     flexDirection: 'row',
     alignItems: 'center',

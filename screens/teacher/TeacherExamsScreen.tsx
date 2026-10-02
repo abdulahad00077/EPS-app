@@ -22,8 +22,30 @@ export default function TeacherExamsScreen() {
   
   const statuses = ["Upcoming", "Ongoing", "Completed"];
 
+  // Group exams by name + class
+  const groupedExams = useMemo(() => {
+    if (!exams) return [];
+    const groups: Record<string, any> = {};
+    
+    exams.forEach((exam: any) => {
+      const key = `${exam.name}_${exam.class}`;
+      if (!groups[key]) {
+        groups[key] = {
+          ...exam,
+          subject: exam.subject || "",
+          subjectsList: [exam]
+        };
+      } else {
+        groups[key].subjectsList.push(exam);
+        groups[key].subject = groups[key].subjectsList.map((s: any) => s.subject).filter(Boolean).join(", ");
+      }
+    });
+    
+    return Object.values(groups);
+  }, [exams]);
+
   // Filter exams based on selections
-  const filteredExams = exams?.filter((exam: any) => {
+  const filteredExams = groupedExams.filter((exam: any) => {
     if (selectedClass && exam.class !== selectedClass) return false;
     if (selectedSection && exam.section !== selectedSection) return false;
     
@@ -31,7 +53,7 @@ export default function TeacherExamsScreen() {
     if (selectedStatus && exam.type !== selectedStatus.toLowerCase()) return false;
     
     return true;
-  }) || [];
+  });
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['left', 'right', 'bottom']}>
@@ -65,7 +87,7 @@ export default function TeacherExamsScreen() {
             return (
               <TouchableOpacity 
                 style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}
-                onPress={() => navigation.navigate('TeacherExamResults', { examId: item.id })}
+                onPress={() => navigation.navigate('TeacherExamResults', { examGroup: item, examId: item.id })}
               >
                 <View style={styles.cardHeader}>
                   <Text style={[styles.title, { color: colors.text }]}>{item.name}</Text>
@@ -107,7 +129,7 @@ export default function TeacherExamsScreen() {
                 )}
                 
                 <View style={styles.actionRow}>
-                  <Text style={{ color: colors.primary, fontSize: 13, fontWeight: '600' }}>Enter Marks / View Results</Text>
+                  <Text style={{ color: colors.primary, fontSize: 13, fontWeight: '600' }}>Enter Marks</Text>
                   <Ionicons name="arrow-forward" size={16} color={colors.primary} />
                 </View>
               </TouchableOpacity>

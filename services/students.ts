@@ -25,7 +25,7 @@ export async function getChildStudents(parentPhone: string): Promise<Student[]> 
 
   const { data, error } = await supabase
     .from('students')
-    .select('*, schools(name)')
+    .select('*, schools(name, address)')
     .or(orFilter);
 
   if (error) {
@@ -41,7 +41,7 @@ export async function getChildStudents(parentPhone: string): Promise<Student[]> 
 export async function getStudentDetails(studentId: string): Promise<Student | null> {
   const { data, error } = await supabase
     .from('students')
-    .select('*, schools(name)')
+    .select('*, schools(name, address)')
     .eq('id', studentId)
     .single();
 

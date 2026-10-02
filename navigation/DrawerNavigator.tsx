@@ -8,6 +8,9 @@ import SyllabusScreen from '../screens/SyllabusScreen';
 import ReportCardScreen from '../screens/ReportCardScreen';
 import GrievancesScreen from '../screens/GrievancesScreen';
 import AnnouncementsScreen from '../screens/AnnouncementsScreen';
+import LeaveRequestsScreen from '../screens/LeaveRequestsScreen';
+import DocumentsScreen from '../screens/DocumentsScreen';
+import WorksheetsScreen from '../screens/WorksheetsScreen';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAuth } from '../hooks/useAuth';
 import { useStudent } from '../hooks/useStudent';
@@ -159,6 +162,7 @@ const DrawerNavigator = () => {
 
   return (
     <Drawer.Navigator
+      backBehavior="history"
       drawerContent={(props: any) => <CustomDrawerContent {...props} />}
       screenOptions={{
         headerShown: false,
@@ -199,6 +203,14 @@ const DrawerNavigator = () => {
         }}
       />
       <Drawer.Screen 
+        name="Worksheets" 
+        component={WorksheetsScreen}
+        options={{
+          drawerLabel: t('worksheets', 'Worksheets'),
+          drawerIcon: ({ color, size }: { color: string; size: number }) => <Feather name="file-text" size={size} color={color} />,
+        }}
+      />
+      <Drawer.Screen 
         name="Syllabus" 
         component={SyllabusScreen}
         options={{
@@ -228,6 +240,22 @@ const DrawerNavigator = () => {
         options={{
           drawerLabel: t('announcements', 'Announcements'),
           drawerIcon: ({ color, size }: { color: string; size: number }) => <Feather name="bell" size={size} color={color} />,
+        }}
+      />
+      <Drawer.Screen 
+        name="LeaveRequests" 
+        component={LeaveRequestsScreen}
+        options={{
+          drawerLabel: t('leaveRequests', 'Leave Requests'),
+          drawerIcon: ({ color, size }: { color: string; size: number }) => <Feather name="calendar" size={size} color={color} />,
+        }}
+      />
+      <Drawer.Screen 
+        name="Documents" 
+        component={DocumentsScreen}
+        options={{
+          drawerLabel: t('documents', 'Documents'),
+          drawerIcon: ({ color, size }: { color: string; size: number }) => <Feather name="folder" size={size} color={color} />,
         }}
       />
     </Drawer.Navigator>

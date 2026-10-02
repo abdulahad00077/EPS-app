@@ -1,9 +1,10 @@
-import React from 'react';
-import { View, Text, StyleSheet, FlatList, ActivityIndicator } from 'react-native';
+import React, { useState, useMemo } from 'react';
+import { View, Text, StyleSheet, FlatList, ActivityIndicator, TouchableOpacity, TextInput, Platform } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../../hooks/useAuth';
 import { useTheme } from '../../contexts/ThemeContext';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, Feather } from '@expo/vector-icons';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { useRealtimeData } from '../../hooks/useRealtimeData';
 
 export default function TeacherAnnouncementsScreen() {
@@ -13,15 +14,104 @@ export default function TeacherAnnouncementsScreen() {
   const insets = useSafeAreaInsets();
   const { data: announcements, loading } = useRealtimeData<any>('school_announcements', teacher?.school_id, { column: 'created_at', ascending: false });
 
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const filteredAnnouncements = useMemo(() => {
+    if (!announcements) return [];
+    let filtered = announcements;
+
+    if (selectedDate) {
+      filtered = filtered.filter((a: any) => {
+        const itemDate = new Date(a.created_at);
+        return (
+          itemDate.getFullYear() === selectedDate.getFullYear() &&
+          itemDate.getMonth() === selectedDate.getMonth() &&
+          itemDate.getDate() === selectedDate.getDate()
+        );
+      });
+    }
+
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      filtered = filtered.filter((a: any) => {
+        const title = (a.title || '').toLowerCase();
+        const content = (a.content || '').toLowerCase();
+        return title.includes(q) || content.includes(q);
+      });
+    }
+
+    return filtered;
+  }, [announcements, selectedDate, searchQuery]);
+
+  const onDateChange = (event: any, date?: Date) => {
+    setShowDatePicker(Platform.OS === 'ios');
+    if (date) {
+      setSelectedDate(date);
+    }
+  };
+
+  const clearDateFilter = () => {
+    setSelectedDate(null);
+  };
+
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['left', 'right', 'bottom']}>
+      <View style={{ paddingHorizontal: 20, paddingTop: 10 }}>
+        <View style={[styles.searchContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <Ionicons name="search" size={20} color={colors.textSecondary} style={styles.searchIcon} />
+          <TextInput
+            style={[styles.searchInput, { color: colors.text }]}
+            placeholder="Search announcements..."
+            placeholderTextColor={colors.textSecondary}
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+          />
+          {searchQuery.length > 0 && (
+            <TouchableOpacity onPress={() => setSearchQuery('')} style={styles.clearSearchBtn}>
+              <Ionicons name="close-circle" size={20} color={colors.textSecondary} />
+            </TouchableOpacity>
+          )}
+        </View>
+
+        <View style={{ marginTop: 12, marginBottom: 10, flexDirection: 'row', justifyContent: 'flex-start', alignItems: 'center' }}>
+          <TouchableOpacity 
+            style={[styles.dateFilterBtn, { backgroundColor: selectedDate ? colors.primary : colors.surface, borderColor: colors.border }]}
+            onPress={() => setShowDatePicker(true)}
+          >
+            <Feather name="calendar" size={16} color={selectedDate ? '#fff' : colors.text} />
+            <Text style={[styles.dateFilterText, { color: selectedDate ? '#fff' : colors.text }]}>
+              {selectedDate ? selectedDate.toLocaleDateString() : 'Filter by Date'}
+            </Text>
+          </TouchableOpacity>
+
+          {selectedDate && (
+            <TouchableOpacity style={[styles.clearFilterBtn, { marginLeft: 12 }]} onPress={clearDateFilter}>
+              <Text style={[styles.clearFilterText, { color: colors.primary }]}>Clear Filter</Text>
+              <Ionicons name="close-circle" size={16} color={colors.primary} />
+            </TouchableOpacity>
+          )}
+        </View>
+      </View>
+
+      {showDatePicker && (
+        <DateTimePicker
+          value={selectedDate || new Date()}
+          mode="date"
+          display="default"
+          onChange={onDateChange}
+          maximumDate={new Date()}
+        />
+      )}
+
       {loading ? (
         <View style={styles.center}>
           <ActivityIndicator size="large" color={colors.primary} />
         </View>
       ) : (
         <FlatList
-          data={announcements}
+          data={filteredAnnouncements}
           keyExtractor={(item) => item.id}
           contentContainerStyle={[styles.listContent, { paddingBottom: insets.bottom + 20 }]}
           renderItem={({ item }) => (
@@ -41,7 +131,10 @@ export default function TeacherAnnouncementsScreen() {
           )}
           ListEmptyComponent={() => (
             <View style={styles.center}>
-              <Text style={{ color: colors.textSecondary }}>No announcements found.</Text>
+              <Ionicons name="notifications-off-outline" size={48} color={colors.border} style={{ marginBottom: 10 }} />
+              <Text style={{ color: colors.textSecondary, fontSize: 16 }}>
+                {selectedDate || searchQuery ? 'No announcements match your search.' : 'No announcements found.'}
+              </Text>
             </View>
           )}
         />
@@ -54,7 +147,40 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   header: { padding: 20, borderBottomWidth: 1 },
   headerTitle: { fontSize: 24, fontWeight: 'bold' },
-  listContent: { padding: 20 },
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    height: 44,
+    borderRadius: 8,
+    borderWidth: 1,
+  },
+  searchIcon: { marginRight: 8 },
+  searchInput: { flex: 1, fontSize: 15, height: '100%' },
+  clearSearchBtn: { padding: 4 },
+  dateFilterBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    gap: 8,
+  },
+  dateFilterText: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  clearFilterBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  clearFilterText: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  listContent: { padding: 20, paddingTop: 5 },
   card: { padding: 15, borderRadius: 12, borderWidth: 1, marginBottom: 15 },
   title: { fontSize: 16, fontWeight: '600', marginBottom: 5 },
   content: { fontSize: 14, marginBottom: 10, lineHeight: 20 },

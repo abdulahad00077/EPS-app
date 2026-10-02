@@ -15,10 +15,14 @@ import TeacherAttendanceRecordsScreen from '../screens/teacher/TeacherAttendance
 import TeacherExamsScreen from '../screens/teacher/TeacherExamsScreen';
 import TeacherExamResultsScreen from '../screens/teacher/TeacherExamResultsScreen';
 import TeacherSyllabusScreen from '../screens/teacher/TeacherSyllabusScreen';
+import TeacherWorksheetsScreen from '../screens/teacher/TeacherWorksheetsScreen';
 import TeacherDatesheetScreen from '../screens/teacher/TeacherDatesheetScreen';
 import TeacherAnnouncementsScreen from '../screens/teacher/TeacherAnnouncementsScreen';
 import TeacherCompetitionsScreen from '../screens/teacher/TeacherCompetitionsScreen';
 import TeacherFeesScreen from '../screens/teacher/TeacherFeesScreen';
+import TeacherLeaveRequestsScreen from '../screens/teacher/TeacherLeaveRequestsScreen';
+import TeacherDocumentsScreen from '../screens/teacher/TeacherDocumentsScreen';
+import TeacherNotesScreen from '../screens/teacher/TeacherNotesScreen';
 import { TeacherFilterProvider } from '../contexts/TeacherFilterContext';
 
 const Drawer = createDrawerNavigator();
@@ -65,7 +69,7 @@ const BackButton = () => {
   const navigation = useNavigation<any>();
   const { colors } = useTheme();
   return (
-    <TouchableOpacity onPress={() => navigation.navigate('TeacherHome')} style={{ marginLeft: 15 }}>
+    <TouchableOpacity onPress={() => navigation.goBack()} style={{ marginLeft: 15 }}>
       <Ionicons name="arrow-back" size={24} color={colors.text} />
     </TouchableOpacity>
   );
@@ -87,6 +91,7 @@ export default function TeacherDrawerNavigator() {
   return (
     <TeacherFilterProvider>
       <Drawer.Navigator
+        backBehavior="history"
         drawerContent={(props) => <CustomDrawerContent {...props} />}
         screenOptions={{
           drawerPosition: 'right',
@@ -197,6 +202,15 @@ export default function TeacherDrawerNavigator() {
           }} 
         />
         <Drawer.Screen 
+          name="TeacherWorksheets" 
+          component={TeacherWorksheetsScreen} 
+          options={{ 
+            title: 'Worksheets',
+            headerLeft: () => <BackButton />,
+            drawerIcon: ({ color }) => <Ionicons name="document-text-outline" size={22} color={color} />
+          }} 
+        />
+        <Drawer.Screen 
           name="TeacherDatesheet" 
           component={TeacherDatesheetScreen} 
           options={{ 
@@ -215,6 +229,24 @@ export default function TeacherDrawerNavigator() {
           }} 
         />
         <Drawer.Screen 
+          name="TeacherLeaveRequests" 
+          component={TeacherLeaveRequestsScreen} 
+          options={{ 
+            title: 'Leave Requests',
+            headerLeft: () => <BackButton />,
+            drawerIcon: ({ color }) => <Ionicons name="calendar-outline" size={22} color={color} />
+          }} 
+        />
+        <Drawer.Screen 
+          name="TeacherDocuments" 
+          component={TeacherDocumentsScreen} 
+          options={{ 
+            title: 'Documents',
+            headerLeft: () => <BackButton />,
+            drawerIcon: ({ color }) => <Ionicons name="documents-outline" size={22} color={color} />
+          }} 
+        />
+        <Drawer.Screen 
           name="TeacherCompetitions" 
           component={TeacherCompetitionsScreen} 
           options={{ 
@@ -230,6 +262,15 @@ export default function TeacherDrawerNavigator() {
             title: 'Class Fees (Pending)',
             headerLeft: () => <BackButton />,
             drawerIcon: ({ color }) => <Ionicons name="cash-outline" size={22} color={color} />
+          }} 
+        />
+        <Drawer.Screen 
+          name="TeacherNotes" 
+          component={TeacherNotesScreen} 
+          options={{ 
+            title: 'My Notes',
+            headerLeft: () => <BackButton />,
+            drawerIcon: ({ color }) => <Ionicons name="document-text-outline" size={22} color={color} />
           }} 
         />
       </Drawer.Navigator>

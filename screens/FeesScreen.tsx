@@ -30,6 +30,7 @@ const FeesScreen = () => {
   const { selectedStudent } = useStudent();
   const [fees, setFees] = useState<FeeRecord[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isGeneratingLink, setIsGeneratingLink] = useState(false);
   const [selectedReceipt, setSelectedReceipt] = useState<{payment: any, fee: FeeRecord} | null>(null);
   const { isDark } = useTheme();
   const { t } = useLanguage();
@@ -164,6 +165,40 @@ const FeesScreen = () => {
     }
   };
 
+  const handlePayFeesOnline = async () => {
+    if (!selectedStudent?.admission_number) {
+      Alert.alert('Error', 'Student admission number not found.');
+      return;
+    }
+    
+    setIsGeneratingLink(true);
+    try {
+      // Use local IP for dev testing (matching expo network) or switch to production url later
+      const apiUrl = 'http://192.168.1.43:3000/api/public/generate-payment-link';
+      
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ applicantId: selectedStudent.admission_number })
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok || !data.link) {
+        throw new Error(data.error || 'Failed to generate payment link');
+      }
+      
+      // Open the generated link
+      await Linking.openURL(data.link);
+      
+    } catch (error: any) {
+      console.error('Payment Link Error:', error);
+      Alert.alert('Error', 'Could not open payment portal. Ensure backend is running.');
+    } finally {
+      setIsGeneratingLink(false);
+    }
+  };
+
   const totalFees = fees.reduce((sum, f) => sum + f.amount, 0);
   const totalPaid = fees.reduce((sum, f) => sum + (f.paid_amount || (f.status === 'paid' || f.status === 'PAID' ? f.amount : 0)), 0);
   const totalOutstanding = totalFees - totalPaid;
@@ -264,6 +299,20 @@ const FeesScreen = () => {
                 <Text style={[styles.feeTotalValue, { color: textColor }]}>₹ {totalOutstanding.toLocaleString()}</Text>
               </View>
             </View>
+
+            {totalOutstanding > 0 && (
+              <TouchableOpacity 
+                style={{ backgroundColor: '#0ea5e9', paddingVertical: 14, borderRadius: 12, marginTop: 24, alignItems: 'center', shadowColor: '#0ea5e9', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 4, opacity: isGeneratingLink ? 0.7 : 1 }}
+                onPress={handlePayFeesOnline}
+                disabled={isGeneratingLink}
+              >
+                {isGeneratingLink ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <Text style={{ color: '#fff', fontWeight: '800', fontSize: 16, textTransform: 'uppercase', letterSpacing: 1 }}>Pay Fees Online</Text>
+                )}
+              </TouchableOpacity>
+            )}
           </View>
         </View>
 

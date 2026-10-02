@@ -14,6 +14,7 @@ export interface Student {
   created_at: string;
   session?: string;
   admission_number?: string;
+  sr_number?: string;
   roll_number?: string;
   
   // New fields from ERP
@@ -28,7 +29,7 @@ export interface Student {
   blood_group?: string;
   address?: string;
   secondary_address?: string;
-  schools?: { name: string };
+  schools?: { name: string; address?: string };
   show_report_card?: boolean;
   father_photo_url?: string;
   mother_photo_url?: string;
@@ -212,5 +213,18 @@ export interface TransportException {
   date: string;
   exception_type: 'absent' | 'parent_drop';
   reason?: string;
+  created_at?: string;
+}
+
+export interface Worksheet {
+  id: string;
+  school_id: string;
+  class: string;
+  section?: string;
+  title: string;
+  description?: string;
+  subject?: string;
+  date: string;
+  file_url?: string;
   created_at?: string;
 }

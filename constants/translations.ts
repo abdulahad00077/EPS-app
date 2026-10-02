@@ -231,6 +231,8 @@ export const translations = {
     nextClass: "Next Class",
     noRecentActivity: "No recent activity found.",
     switchStudentProfile: "Switch Student Profile",
+    leaveRequests: "Leave Requests",
+    documents: "Documents",
 
     // Fees Screen (new)
     feeDetailsPayment: "Fee Details & Payment",
@@ -308,6 +310,25 @@ export const translations = {
     clearFilter: "Clear Filter",
     noAnnouncementsForDate: "No announcements for this date.",
     noAnnouncements: "No announcements found.",
+
+    // Report Card / Admit Card Screen
+    examDate: "Scheduled",
+    admitCards: "Admit Cards",
+    downloadAdmitCard: "Download Admit Card",
+
+    // Worksheets Screen
+    worksheets: "Worksheets",
+    studyMaterials: "Study Materials",
+    allWorksheets: "All Worksheets",
+    noWorksheetsYet: "No Worksheets Yet",
+    worksheetsWillAppearHere: "Study materials and practice worksheets will appear here as soon as they are uploaded.",
+    date: "Date",
+    download: "Download",
+    noFile: "No File",
+    filteredByDate: "Filtered by Date",
+    filterDate: "Filter Date",
+    filteredResults: "Filtered Results",
+
   },
   hi: {
     // Drawer
@@ -541,6 +562,8 @@ export const translations = {
     nextClass: "अगली कक्षा",
     noRecentActivity: "कोई हालिया गतिविधि नहीं मिली।",
     switchStudentProfile: "छात्र प्रोफ़ाइल बदलें",
+    leaveRequests: "छुट्टी के आवेदन",
+    documents: "दस्तावेज़",
 
     // Fees Screen (new)
     feeDetailsPayment: "शुल्क विवरण और भुगतान",
@@ -618,6 +641,25 @@ export const translations = {
     clearFilter: "फ़िल्टर साफ़ करें",
     noAnnouncementsForDate: "इस तिथि के लिए कोई घोषणा नहीं है।",
     noAnnouncements: "कोई घोषणा नहीं मिली।",
+
+    // Report Card / Admit Card Screen
+    examDate: "निर्धारित",
+    admitCards: "एडमिट कार्ड",
+    downloadAdmitCard: "एडमिट कार्ड डाउनलोड करें",
+
+    // Worksheets Screen
+    worksheets: "वर्कशीट",
+    studyMaterials: "अध्ययन सामग्री",
+    allWorksheets: "सभी वर्कशीट",
+    noWorksheetsYet: "अभी कोई वर्कशीट नहीं",
+    worksheetsWillAppearHere: "अध्ययन सामग्री और अभ्यास वर्कशीट यहां अपलोड होते ही दिखाई देंगे।",
+    date: "तारीख",
+    download: "डाउनलोड",
+    noFile: "कोई फ़ाइल नहीं",
+    filteredByDate: "तारीख के अनुसार फ़िल्टर किया गया",
+    filterDate: "तारीख फ़िल्टर करें",
+    filteredResults: "फ़िल्टर किए गए परिणाम",
+
   }
 };
 

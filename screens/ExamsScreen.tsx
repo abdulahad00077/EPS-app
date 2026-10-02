@@ -20,33 +20,41 @@ import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useTransliteration } from '../hooks/useTransliteration';
 
-const ExamScheduleItem = ({ exam, isDark, cardColor, borderColor, textColor, subtextColor }: any) => {
-  const transExamName = useTransliteration(exam.name);
+
+const DatesheetItem = ({ group, isDark, cardColor, borderColor, textColor, subtextColor, t, studentClass }: any) => {
+  const transExamName = useTransliteration(group.name);
+  
   return (
-    <TouchableOpacity 
-      activeOpacity={0.9}
-      style={[styles.examCard, { backgroundColor: cardColor, borderColor }]}
-    >
+    <View style={[styles.examCard, { backgroundColor: cardColor, borderColor }]}>
       <View style={styles.cardRow}>
-        <LinearGradient
-          colors={isDark ? ['#0284C7', '#0369A1'] : ['#F0F9FF', '#E0F2FE']}
-          style={styles.dateBadge}
-        >
-          <Text style={[styles.dateNum, { color: isDark ? '#F0F9FF' : '#0369A1' }]}>{new Date(exam.date).getDate()}</Text>
-          <Text style={[styles.dateMonth, { color: isDark ? '#E0F2FE' : '#0284C7' }]}>{new Date(exam.date).toLocaleDateString('en-US', { month: 'short' })}</Text>
-        </LinearGradient>
+        <View style={[styles.dateBadge, { backgroundColor: isDark ? '#1e3a8a' : '#dbeafe', width: 64, height: 64, borderRadius: 24, alignItems: 'center', justifyContent: 'center' }]}>
+          <Feather name="calendar" size={28} color="#2563eb" />
+        </View>
         <View style={styles.examInfo}>
           <Text style={[styles.examName, { color: textColor }]}>{transExamName}</Text>
           <View style={styles.dayRow}>
-            <Feather name="trending-up" size={12} color="#0284C7" />
-            <Text style={[styles.dayText, { color: subtextColor }]}>{new Date(exam.date).toLocaleDateString('en-US', { weekday: 'long' })}</Text>
+            <Text style={[styles.dayText, { color: subtextColor, marginLeft: 0 }]}>{group.studentExams.length} {t('subjects', 'Subjects')} Scheduled</Text>
           </View>
         </View>
-        <View style={[styles.chevronBg, { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#F8FAFC' }]}>
-          <Feather name="chevron-right" size={18} color={isDark ? '#F1F5F9' : '#CBD5E1'} />
-        </View>
       </View>
-    </TouchableOpacity>
+      <View style={{ marginTop: 20, paddingTop: 15, borderTopWidth: 1, borderTopColor: isDark ? '#334155' : '#e2e8f0' }}>
+        {group.studentExams.map((ex: any, idx: number) => (
+          <View key={idx} style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 }}>
+            <Text style={{ color: subtextColor, fontSize: 13, width: 90 }}>{new Date(ex.date).toLocaleDateString('en-US', { day: 'numeric', month: 'short' })}</Text>
+            <View style={{ flex: 1 }}>
+              <Text style={{ color: textColor, fontSize: 13, fontWeight: '600' }}>{ex.subject}</Text>
+              <Text style={{ color: subtextColor, fontSize: 11, marginTop: 2 }}>
+                {ex.start_time && ex.end_time 
+                  ? `${ex.start_time} - ${ex.end_time}`
+                  : ex.time 
+                    ? ex.time 
+                    : '09:00 AM - 12:00 PM'}
+              </Text>
+            </View>
+          </View>
+        ))}
+      </View>
+    </View>
   );
 };
 
@@ -139,7 +147,39 @@ const ExamsScreen = () => {
         getStudentExams(selectedStudent.school_id),
         getStudentResults(selectedStudent.id)
       ]).then(([examsData, resultsData]) => {
-        setExams(examsData);
+        // We need all valid exams for the school datesheet
+        const allValidExams = examsData.filter((e: any) => e.date);
+        
+        // Group by exam name
+        const groupsMap: any = {};
+        allValidExams.forEach((e: any) => {
+          if (!groupsMap[e.name]) {
+            groupsMap[e.name] = { name: e.name, exams: [], studentExams: [], allClasses: new Set() };
+          }
+          groupsMap[e.name].exams.push(e);
+          groupsMap[e.name].allClasses.add(e.class);
+          if (e.class === selectedStudent.class) {
+            groupsMap[e.name].studentExams.push(e);
+          }
+        });
+        
+        // Only keep groups where the student has at least one exam scheduled
+        let grouped = Object.values(groupsMap).filter((g: any) => g.studentExams.length > 0);
+
+        // Sort exams within each group by date
+        grouped = grouped.map((g: any) => {
+          g.studentExams.sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime());
+          g.classesList = Array.from(g.allClasses).sort((a: any, b: any) => {
+            // Basic sort for classes (LKG, UKG, 1, 2, 3...)
+            const aNum = parseInt(a);
+            const bNum = parseInt(b);
+            if (!isNaN(aNum) && !isNaN(bNum)) return aNum - bNum;
+            return a.localeCompare(b);
+          });
+          return g;
+        });
+
+        setExams(grouped as any);
         setResults(resultsData);
         setLoading(false);
       });
@@ -216,15 +256,17 @@ const ExamsScreen = () => {
               <Text style={[styles.emptyDesc, { color: subtextColor }]}>{t('noExamsScheduledDesc', "Stay tuned! We'll notify you when the next exam timetable is published.")}</Text>
             </View>
           ) : (
-            exams.map((exam) => (
-              <ExamScheduleItem
-                key={exam.id}
-                exam={exam}
+            exams.map((group: any, idx) => (
+              <DatesheetItem
+                key={idx}
+                group={group}
                 isDark={isDark}
                 cardColor={cardColor}
                 borderColor={borderColor}
                 textColor={textColor}
                 subtextColor={subtextColor}
+                t={t}
+                studentClass={selectedStudent?.class}
               />
             ))
           )
@@ -238,9 +280,9 @@ const ExamsScreen = () => {
               <Text style={[styles.emptyDesc, { color: subtextColor }]}>{t('resultsPendingDesc', 'Exams are under evaluation. Results will appear here once finalized.')}</Text>
             </View>
           ) : (
-            results.map((result) => (
+            results.map((result, idx) => (
               <ExamResultItem
-                key={result.id}
+                key={`${result.id}-${idx}`}
                 result={result}
                 isDark={isDark}
                 cardColor={cardColor}

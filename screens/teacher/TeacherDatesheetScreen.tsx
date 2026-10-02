@@ -1,5 +1,5 @@
-import React, { useMemo } from 'react';
-import { View, Text, StyleSheet, FlatList, ActivityIndicator, TouchableOpacity, Alert } from 'react-native';
+import React, { useMemo, useState } from 'react';
+import { View, Text, StyleSheet, FlatList, ActivityIndicator, TouchableOpacity, Alert, TextInput } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../../hooks/useAuth';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -15,6 +15,7 @@ export default function TeacherDatesheetScreen() {
   const insets = useSafeAreaInsets();
   const { data: datesheets, loading } = useRealtimeData<any>('exams', teacher?.school_id, { column: 'date', ascending: true });
   const { selectedClass, selectedSection } = useTeacherFilter();
+  const [searchQuery, setSearchQuery] = useState('');
 
   const filteredDatesheets = useMemo(() => {
     if (!datesheets) return [];
@@ -25,8 +26,19 @@ export default function TeacherDatesheetScreen() {
     if (selectedSection) {
       filtered = filtered.filter((d: any) => !d.section || d.section === selectedSection);
     }
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      filtered = filtered.filter((d: any) => {
+        const subject = (d.subject || d.name || '').toLowerCase();
+        const cls = (d.class || '').toLowerCase();
+        const type = (d.exam_type || d.type || '').toLowerCase();
+        const date = new Date(d.date).toLocaleDateString().toLowerCase();
+        const time = `${d.start_time || ''} - ${d.end_time || ''}`.toLowerCase();
+        return subject.includes(q) || cls.includes(q) || type.includes(q) || date.includes(q) || time.includes(q);
+      });
+    }
     return filtered;
-  }, [datesheets, selectedClass, selectedSection]);
+  }, [datesheets, selectedClass, selectedSection, searchQuery]);
 
   const generatePDF = async () => {
     try {
@@ -40,6 +52,7 @@ export default function TeacherDatesheetScreen() {
           <head>
             <meta name="viewport" content="width=device-width, initial-scale=1.0" />
             <style>
+              @page { size: landscape; margin: 10mm; }
               body { font-family: 'Helvetica', 'Arial', sans-serif; padding: 20px; color: #333; }
               .header { text-align: center; margin-bottom: 30px; }
               .school-name { font-size: 24px; font-weight: bold; color: #1e3a8a; }
@@ -80,7 +93,10 @@ export default function TeacherDatesheetScreen() {
       // Use printAsync to open the native print dialog directly
       // This avoids all file permission issues with Expo Go SDK 53+
       // User can select "Save as PDF" from the print dialog
-      await Print.printAsync({ html: htmlContent });
+      await Print.printAsync({ 
+        html: htmlContent,
+        orientation: Print.Orientation.landscape 
+      });
     } catch (error) {
       console.error('Error generating PDF:', error);
       Alert.alert('Error', 'Failed to generate PDF datesheet.');
@@ -106,6 +122,23 @@ export default function TeacherDatesheetScreen() {
               <Text style={styles.downloadBtnText}>Download PDF</Text>
             </TouchableOpacity>
           </View>
+
+          <View style={[styles.searchContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            <Ionicons name="search" size={20} color={colors.textSecondary} style={styles.searchIcon} />
+            <TextInput
+              style={[styles.searchInput, { color: colors.text }]}
+              placeholder="Search subject, class, date, time..."
+              placeholderTextColor={colors.textSecondary}
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+            />
+            {searchQuery.length > 0 && (
+              <TouchableOpacity onPress={() => setSearchQuery('')} style={styles.clearSearchBtn}>
+                <Ionicons name="close-circle" size={20} color={colors.textSecondary} />
+              </TouchableOpacity>
+            )}
+          </View>
+
           <FlatList
           data={filteredDatesheets}
           keyExtractor={(item) => item.id}
@@ -161,7 +194,11 @@ const styles = StyleSheet.create({
   actionTitle: { fontSize: 18, fontWeight: '600' },
   downloadBtn: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8, gap: 6 },
   downloadBtnText: { color: '#fff', fontSize: 14, fontWeight: '600' },
-  listContent: { padding: 20 },
+  searchContainer: { flexDirection: 'row', alignItems: 'center', marginHorizontal: 20, marginBottom: 15, paddingHorizontal: 12, height: 44, borderRadius: 8, borderWidth: 1 },
+  searchIcon: { marginRight: 8 },
+  searchInput: { flex: 1, fontSize: 15, height: '100%' },
+  clearSearchBtn: { padding: 4 },
+  listContent: { padding: 20, paddingTop: 5 },
   card: { padding: 15, borderRadius: 12, borderWidth: 1, marginBottom: 15 },
   cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 },
   title: { fontSize: 18, fontWeight: '600', flex: 1, marginRight: 10 },

@@ -11,7 +11,10 @@ import {
 } from 'react-native';
 import { useStudent } from '../hooks/useStudent';
 import { getStudentReportCards } from '../services/reportCard';
+import { getApprovedAdmitCards, getSchoolSettings } from '../services/exams';
 import { ReportCard } from '../types';
+import * as Print from 'expo-print';
+import * as Sharing from 'expo-sharing';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation, DrawerActions } from '@react-navigation/native';
@@ -77,6 +80,8 @@ const ReportCardScreen = () => {
   const navigation = useNavigation();
   const { selectedStudent } = useStudent();
   const [reportCards, setReportCards] = useState<ReportCard[]>([]);
+  const [admitCards, setAdmitCards] = useState<any[]>([]);
+  const [schoolSettings, setSchoolSettings] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const { isDark } = useTheme();
   const { t } = useLanguage();
@@ -92,12 +97,174 @@ const ReportCardScreen = () => {
   useEffect(() => {
     if (selectedStudent) {
       setLoading(true);
-      getStudentReportCards(selectedStudent.id).then(data => {
-        setReportCards(data);
+      Promise.all([
+        getStudentReportCards(selectedStudent.id),
+        getApprovedAdmitCards(selectedStudent),
+        getSchoolSettings(selectedStudent.school_id)
+      ]).then(([reportsData, admitCardsData, settingsData]) => {
+        setReportCards(reportsData);
+        setAdmitCards(admitCardsData);
+        setSchoolSettings(settingsData);
         setLoading(false);
       });
     }
   }, [selectedStudent]);
+
+  const downloadAdmitCard = async (admitCard: any) => {
+    try {
+      const schoolName = selectedStudent?.schools?.name || 'School Name';
+      const schoolAddress = selectedStudent?.schools?.address || 'School Address';
+      const affiliationNo = schoolSettings?.affiliation_number || '';
+      const schoolBoard = schoolSettings?.school_board || '';
+      const schoolCode = schoolSettings?.school_code || '';
+      const principalName = schoolSettings?.principal_name || '';
+      const academicSession = selectedStudent?.session || '2026-2027';
+
+      // Build header info line from school settings
+      const headerInfoParts: string[] = [];
+      if (affiliationNo) headerInfoParts.push(`Affiliation No: <strong>${affiliationNo}</strong>`);
+      if (schoolBoard) headerInfoParts.push(`Board: <strong>${schoolBoard}</strong>`);
+      if (schoolCode) headerInfoParts.push(`School Code: <strong>${schoolCode}</strong>`);
+      const headerInfoLine = headerInfoParts.length > 0 ? `<p class="school-meta">${headerInfoParts.join(' &nbsp;•&nbsp; ')}</p>` : '';
+
+      const html = `
+        <html>
+          <head>
+            <style>
+              body { font-family: system-ui, -apple-system, sans-serif; padding: 20px; display: flex; justify-content: center; background: #fff; }
+              .card { width: 100%; max-width: 800px; min-height: 500px; padding: 30px; box-sizing: border-box; border: 2px solid black; border-radius: 8px; display: flex; flex-direction: column; justify-content: space-between; }
+              .header { display: flex; align-items: center; justify-content: space-between; padding-bottom: 12px; border-bottom: 2px solid black; gap: 16px; }
+              .school-info { flex: 1; text-align: center; }
+              .school-name { font-size: 22px; font-weight: 900; text-transform: uppercase; margin: 0; color: #000; }
+              .school-address { font-size: 12px; color: #444; margin: 4px 0; }
+              .school-meta { font-size: 10px; color: #333; margin: 2px 0 0; }
+              .badge-container { text-align: center; margin: 16px 0; }
+              .badge { background: black; color: white; padding: 6px 24px; border-radius: 999px; font-size: 13px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; }
+              .main-body { display: flex; gap: 16px; align-items: flex-start; margin-top: 8px; }
+              .details { flex: 3; font-size: 13px; display: flex; flex-direction: column; gap: 8px; }
+              .row { display: flex; gap: 8px; }
+              .row-bg { background: #f3f4f6; padding: 8px; border: 1px solid #e5e7eb; border-radius: 4px; }
+              .col { flex: 1; }
+              .label { color: #4b5563; font-weight: 500; }
+              .val { color: #000; font-weight: 700; }
+              .val-green { color: #047857; font-weight: 700; }
+              .photo-section { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+              .photo-box { width: 96px; height: 112px; border: 2px solid #9ca3af; border-radius: 4px; background: #f9fafb; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+              .sign-box { width: 100%; height: 48px; border: 1px dashed #d1d5db; border-radius: 4px; background: #f8fafc; display: flex; align-items: center; justify-content: center; }
+              table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 20px; }
+              th { border: 1px solid #d1d5db; background: #f3f4f6; padding: 8px; text-align: left; font-weight: 600; }
+              td { border: 1px solid #e5e7eb; padding: 8px; }
+              .footer { display: flex; justify-content: space-between; margin-top: 40px; padding: 0 20px; }
+              .signature { text-align: center; }
+              .sign-line { width: 140px; border-bottom: 1px solid black; margin-bottom: 6px; }
+              .sign-text { font-size: 11px; font-weight: 600; }
+              .notice { font-size: 9px; color: #6b7280; margin-top: 16px; text-align: left; font-weight: 500; }
+            </style>
+          </head>
+          <body>
+            <div class="card">
+              <div>
+                <div class="header">
+                  <div class="school-info">
+                    <h2 class="school-name">${schoolName}</h2>
+                    <p class="school-address">${schoolAddress}</p>
+                    ${headerInfoLine}
+                  </div>
+                </div>
+                
+                <div class="badge-container">
+                  <span class="badge">Admit Card • Session ${academicSession}</span>
+                </div>
+                
+                <div class="main-body">
+                  <div class="details">
+                     <div class="row row-bg">
+                        <div class="col"><span class="label">Examination:</span> <span class="val" style="text-transform: uppercase;">${admitCard.seriesName}</span></div>
+                     </div>
+                     <div class="row">
+                        <div class="col"><span class="label">Student Name:</span> <span class="val">${selectedStudent?.name}</span></div>
+                        <div class="col"><span class="label">Admission No:</span> <span class="val">${selectedStudent?.admission_number || selectedStudent?.sr_number || 'N/A'}</span></div>
+                     </div>
+                     <div class="row">
+                        <div class="col"><span class="label">Roll Number:</span> <span class="val">${selectedStudent?.roll_id || selectedStudent?.roll_number || 'N/A'}</span></div>
+                        <div class="col"><span class="label">Class & Section:</span> <span class="val-green">${selectedStudent?.class} ${selectedStudent?.section || ''}</span></div>
+                     </div>
+                     <div class="row">
+                        <div class="col"><span class="label">Father's Name:</span> <span class="val" style="font-weight: 600;">${selectedStudent?.father_name || 'N/A'}</span></div>
+                        <div class="col"><span class="label">Mother's Name:</span> <span class="val" style="font-weight: 600;">${selectedStudent?.mother_name || 'N/A'}</span></div>
+                     </div>
+                     <div class="row">
+                        <div class="col"><span class="label">Date of Birth:</span> <span class="val" style="font-weight: 600;">${selectedStudent?.date_of_birth ? new Date(selectedStudent.date_of_birth).toLocaleDateString('en-US', {month: 'short', day: 'numeric', year: 'numeric'}) : 'N/A'}</span></div>
+                        <div class="col"><span class="label">Contact Phone:</span> <span class="val" style="font-weight: 600; font-family: monospace;">${selectedStudent?.parent_phone || 'N/A'}</span></div>
+                     </div>
+                  </div>
+                  
+                  <div class="photo-section">
+                     <div class="photo-box">
+                       ${selectedStudent?.photo_url ? `<img src="${selectedStudent.photo_url}" style="width: 100%; height: 100%; object-fit: cover;" />` : `<span style="font-size: 10px; font-weight: bold; color: #9ca3af; text-transform: uppercase;">Affix Photo</span>`}
+                     </div>
+                     <div class="sign-box">
+                       <span style="font-size: 9px; color: #94a3b8; font-weight: 600; text-transform: uppercase;">Candidate Signature</span>
+                     </div>
+                  </div>
+                </div>
+                
+                <table>
+                  <thead>
+                    <tr>
+                      <th style="text-align: center; width: 50px;">S.No</th>
+                      <th>Date</th>
+                      <th>Subject</th>
+                      <th>Timings</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${admitCard.exams.map((ex: any, idx: number) => {
+                      const exDuration = ex.duration || 180;
+                      const startHour = 9;
+                      const endMinutes = (startHour * 60) + exDuration;
+                      const endH = Math.floor(endMinutes / 60);
+                      const endM = endMinutes % 60;
+                      const ampm = endH >= 12 ? 'PM' : 'AM';
+                      const displayH = endH > 12 ? endH - 12 : (endH === 0 ? 12 : endH);
+                      const displayTime = `09:00 AM - ${displayH.toString().padStart(2, '0')}:${endM.toString().padStart(2, '0')} ${ampm}`;
+                      
+                      return `
+                      <tr>
+                        <td style="text-align: center;">${idx + 1}</td>
+                        <td>${new Date(ex.date + "T00:00:00").toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}</td>
+                        <td style="font-weight: 600; color: #111827;">${ex.subject || ex.name}</td>
+                        <td style="font-family: monospace;">${displayTime}</td>
+                      </tr>
+                    `}).join('')}
+                  </tbody>
+                </table>
+              </div>
+              
+              <div class="footer">
+                <div class="signature">
+                  <div class="sign-line"></div>
+                  <span class="sign-text">Class Teacher</span>
+                </div>
+                <div class="signature">
+                  <div class="sign-line"></div>
+                  <span class="sign-text">Accountant / Seal</span>
+                </div>
+                <div class="signature">
+                  <div class="sign-line"></div>
+                  <span class="sign-text">${principalName ? principalName + '<br/>' : ''}Principal / Controller</span>
+                </div>
+              </div>
+              <p class="notice">• Entry without this Admit Card is strictly prohibited in the Examination Hall.</p>
+            </div>
+          </body>
+        </html>
+      `;
+      await Print.printAsync({ html });
+    } catch (error) {
+      console.error(error);
+    }
+  };
 
   if (loading) {
     return (
@@ -173,7 +340,35 @@ const ReportCardScreen = () => {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
-        {reportCards.length === 0 ? (
+        {admitCards.length > 0 && (
+          <View style={{ marginBottom: 24 }}>
+            <Text style={{ fontSize: 18, fontWeight: '700', color: textColor, marginBottom: 12 }}>{t('admitCards', 'Admit Cards')}</Text>
+            {admitCards.map((ac, idx) => (
+              <View key={idx} style={[styles.reportCard, { backgroundColor: cardColor, borderColor }]}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
+                  <View style={[styles.gradeBadge, { backgroundColor: '#f59e0b' }]}>
+                    <Feather name="file-text" size={24} color="#FFF" />
+                  </View>
+                  <View style={{ marginLeft: 12, flex: 1 }}>
+                    <Text style={{ fontSize: 16, fontWeight: '700', color: textColor }}>{ac.seriesName} Admit Card</Text>
+                    <Text style={{ fontSize: 13, color: subtextColor }}>{t('examDate', 'Scheduled')}: {ac.exams.length} Subjects</Text>
+                  </View>
+                </View>
+                <TouchableOpacity 
+                  style={{ backgroundColor: '#0284c7', padding: 12, borderRadius: 8, alignItems: 'center', flexDirection: 'row', justifyContent: 'center' }}
+                  onPress={() => downloadAdmitCard(ac)}
+                >
+                  <Feather name="download" size={18} color="#FFF" style={{ marginRight: 8 }} />
+                  <Text style={{ color: '#FFF', fontWeight: '600' }}>{t('downloadAdmitCard', 'Download Admit Card')}</Text>
+                </TouchableOpacity>
+              </View>
+            ))}
+          </View>
+        )}
+
+        <Text style={{ fontSize: 18, fontWeight: '700', color: textColor, marginBottom: 12, display: reportCards.length > 0 ? 'flex' : 'none' }}>{t('reportCard', 'Results')}</Text>
+        
+        {reportCards.length === 0 && admitCards.length === 0 ? (
           <View style={[styles.emptyCard, { backgroundColor: cardColor, borderColor }]}>
             <View style={[styles.emptyIconBg, { backgroundColor: isDark ? 'rgba(2,132,199,0.2)' : '#F8FAFC' }]}>
               <MaterialCommunityIcons name="clipboard-text-off-outline" size={64} color={isDark ? '#0284C7' : '#CBD5E1'} />

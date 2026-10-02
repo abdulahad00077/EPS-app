@@ -6,6 +6,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { supabase } from '../../services/supabase';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import CustomDropdown from '../../components/CustomDropdown';
 
 export default function TeacherExamResultsScreen() {
   const { teacher } = useAuth();
@@ -13,7 +14,24 @@ export default function TeacherExamResultsScreen() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
   const route = useRoute<any>();
-  const examId = route.params?.examId;
+  
+  const examGroup = route.params?.examGroup;
+  
+  const initialExamId = examGroup?.subjectsList?.length > 0 ? examGroup.subjectsList[0].id : route.params?.examId;
+  const [selectedExamId, setSelectedExamId] = useState<string | null>(initialExamId);
+  const [selectedSubjectName, setSelectedSubjectName] = useState<string | null>(examGroup?.subjectsList?.length > 0 ? examGroup.subjectsList[0].subject : null);
+
+  useEffect(() => {
+    const group = route.params?.examGroup;
+    const newExamId = group?.subjectsList?.length > 0 ? group.subjectsList[0].id : route.params?.examId;
+    const newSubj = group?.subjectsList?.length > 0 ? group.subjectsList[0].subject : null;
+    
+    if (newExamId && newExamId !== selectedExamId) {
+      setSelectedExamId(newExamId);
+      setSelectedSubjectName(newSubj);
+      setMarks({});
+    }
+  }, [route.params?.examId, route.params?.examGroup]);
 
   const [exam, setExam] = useState<any>(null);
   const [students, setStudents] = useState<any[]>([]);
@@ -22,10 +40,10 @@ export default function TeacherExamResultsScreen() {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    if (examId && teacher?.school_id) {
+    if (selectedExamId && teacher?.school_id) {
       fetchData();
     }
-  }, [examId, teacher?.school_id]);
+  }, [selectedExamId, teacher?.school_id]);
 
   const fetchData = async () => {
     setLoading(true);
@@ -34,26 +52,20 @@ export default function TeacherExamResultsScreen() {
       const { data: examData, error: examError } = await supabase
         .from('exams')
         .select('*')
-        .eq('id', examId)
+        .eq('id', selectedExamId)
         .eq('school_id', teacher?.school_id)
         .single();
         
       if (examError) throw examError;
       setExam(examData);
 
-      // Fetch Students in that class/section
-      let studentsQuery = supabase
+      // Fetch Students in that class
+      const { data: studentsData, error: stdError } = await supabase
         .from('students')
         .select('*')
         .eq('school_id', teacher?.school_id)
         .eq('class', examData.class)
         .order('name');
-        
-      if (examData.section) {
-        studentsQuery = studentsQuery.eq('section', examData.section);
-      }
-      
-      const { data: studentsData, error: stdError } = await studentsQuery;
       if (stdError) throw stdError;
       setStudents(studentsData || []);
 
@@ -61,7 +73,7 @@ export default function TeacherExamResultsScreen() {
       const { data: resultsData, error: resError } = await supabase
         .from('exam_results')
         .select('*')
-        .eq('exam_id', examId);
+        .eq('exam_id', selectedExamId);
         
       if (resError) throw resError;
       
@@ -85,7 +97,7 @@ export default function TeacherExamResultsScreen() {
       const recordsToUpsert = students.map(s => {
         const scoreStr = marks[s.id];
         return {
-          exam_id: examId,
+          exam_id: selectedExamId,
           student_id: s.id,
           score: scoreStr ? parseFloat(scoreStr) : null,
           total_marks: exam?.max_marks || 100,
@@ -145,26 +157,49 @@ export default function TeacherExamResultsScreen() {
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['left', 'right', 'bottom']}>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         {/* Header Information */}
-        <View style={[styles.headerInfo, { borderBottomColor: colors.border, backgroundColor: colors.surface }]}>
-          <Text style={[styles.examTitle, { color: colors.text }]}>{exam?.name}</Text>
-          <View style={styles.metaRowContainer}>
-            <View style={styles.metaBadge}>
-              <Ionicons name="book-outline" size={14} color={colors.textSecondary} />
-              <Text style={{ color: colors.textSecondary, fontSize: 13, marginLeft: 5 }}>{exam?.subject}</Text>
-            </View>
-            <View style={styles.metaBadge}>
-              <Ionicons name="stats-chart-outline" size={14} color={colors.textSecondary} />
-              <Text style={{ color: colors.textSecondary, fontSize: 13, marginLeft: 5 }}>Max: {exam?.max_marks}</Text>
-            </View>
-            <View style={styles.metaBadge}>
-              <Ionicons name="people-outline" size={14} color={colors.textSecondary} />
-              <Text style={{ color: colors.textSecondary, fontSize: 13, marginLeft: 5 }}>{exam?.class} {exam?.section || ''}</Text>
+        <View style={[styles.headerInfo, { borderBottomColor: colors.border, backgroundColor: colors.surface, zIndex: 10 }]}>
+          <Text style={[styles.examTitle, { color: colors.text }]}>{examGroup?.name || exam?.name}</Text>
+          <View style={[styles.metaRowContainer, { zIndex: 10 }]}>
+            {examGroup?.subjectsList?.length > 1 ? (
+              <View style={{ flex: 1, marginRight: 10, zIndex: 10 }}>
+                <CustomDropdown
+                  label=""
+                  data={examGroup.subjectsList.map((s:any) => s.subject).filter(Boolean)}
+                  selectedValue={selectedSubjectName}
+                  onSelect={(sub) => {
+                    setSelectedSubjectName(sub);
+                    const newExam = examGroup.subjectsList.find((s:any) => s.subject === sub);
+                    if (newExam) {
+                      setMarks({});
+                      setSelectedExamId(newExam.id);
+                    }
+                  }}
+                  placeholder="Select Subject"
+                />
+              </View>
+            ) : (
+              <View style={styles.metaBadge}>
+                <Ionicons name="book-outline" size={14} color={colors.textSecondary} />
+                <Text style={{ color: colors.textSecondary, fontSize: 13, marginLeft: 5 }}>{exam?.subject}</Text>
+              </View>
+            )}
+            
+            <View style={{ flexDirection: 'row', gap: 10 }}>
+              <View style={styles.metaBadge}>
+                <Ionicons name="stats-chart-outline" size={14} color={colors.textSecondary} />
+                <Text style={{ color: colors.textSecondary, fontSize: 13, marginLeft: 5 }}>Max: {exam?.max_marks}</Text>
+              </View>
+              <View style={styles.metaBadge}>
+                <Ionicons name="people-outline" size={14} color={colors.textSecondary} />
+                <Text style={{ color: colors.textSecondary, fontSize: 13, marginLeft: 5 }}>{exam?.class} {exam?.section || ''}</Text>
+              </View>
             </View>
           </View>
         </View>
 
         {/* Student List */}
         <FlatList
+          style={{ flex: 1 }}
           data={students}
           keyExtractor={(item) => item.id}
           contentContainerStyle={{ padding: 15, paddingBottom: insets.bottom + 80 }}

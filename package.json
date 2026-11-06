@@ -1,12 +1,14 @@
 {
   "name": "mera-elegant",
-  "version": "1.0.3",
+  "version": "1.0.5",
   "main": "index.ts",
   "scripts": {
     "start": "expo start",
     "android": "expo run:android",
     "ios": "expo run:ios",
-    "web": "expo start --web"
+    "web": "expo start --web",
+    "build:web": "expo export --platform web",
+    "deploy:web": "eas deploy --prod"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",
@@ -35,6 +37,7 @@
     "nativewind": "^4.1.23",
     "pdf-lib": "^1.17.1",
     "react": "^19.2.3",
+    "react-dom": "19.2.3",
     "react-native": "^0.86.3",
     "react-native-chart-kit": "^7.0.4",
     "react-native-gesture-handler": "~2.32.0",
@@ -45,6 +48,7 @@
     "react-native-screens": "~4.26.0",
     "react-native-svg": "^15.15.4",
     "react-native-url-polyfill": "^2.0.0",
+    "react-native-web": "^0.21.2",
     "react-native-webview": "13.16.1",
     "react-native-worklets": "^0.10.1",
     "tailwindcss": "^3.4.1"

@@ -2,7 +2,7 @@
   "expo": {
     "name": "Elegant Public School",
     "slug": "mera-elegant",
-    "version": "1.0.4",
+    "version": "1.0.5",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "scheme": "mera-elegant",
@@ -14,7 +14,7 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.meraelegant.app"
+      "bundleIdentifier": "com.devfordevs.meraelegant"
     },
     "android": {
       "adaptiveIcon": {
@@ -22,10 +22,10 @@
         "foregroundImage": "./assets/adaptive-icon.png"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "com.meraelegant.app"
+      "package": "com.devfordevs.meraelegant"
     },
     "web": {
-      "favicon": "./assets/favicon.ico"
+      "favicon": "./assets/icon.png"
     },
     "runtimeVersion": {
       "policy": "appVersion"
@@ -47,6 +47,11 @@
       "color": "#0284C7",
       "androidMode": "default",
       "androidCollapsedTitle": "Mera Elegant"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "74104206-3448-48a6-8102-a250b211fe58"
+      }
     }
   }
 }

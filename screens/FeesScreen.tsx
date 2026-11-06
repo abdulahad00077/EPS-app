@@ -173,8 +173,9 @@ const FeesScreen = () => {
     
     setIsGeneratingLink(true);
     try {
-      // Use local IP for dev testing (matching expo network) or switch to production url later
-      const apiUrl = 'http://192.168.1.43:3000/api/public/generate-payment-link';
+      // Use production ERP URL by default, or configurable via EXPO_PUBLIC_ERP_URL for localhost dev
+      const erpBaseUrl = process.env.EXPO_PUBLIC_ERP_URL || 'https://meraelegant-erp.vercel.app';
+      const apiUrl = `${erpBaseUrl}/api/public/generate-payment-link`;
       
       const response = await fetch(apiUrl, {
         method: 'POST',
